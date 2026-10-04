@@ -16,7 +16,7 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, doc, setDoc, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Konfigurasi Firebase Web App Anda
+        // Konfigurasi Firebase Anda
         const firebaseConfig = {
             apiKey: "AIzaSyBstv38mQJzjrAnFGzWrzrmTT4Aiztvqi4",
             authDomain: "takwim-kemas.firebaseapp.com",
@@ -263,10 +263,33 @@
             );
         }
 
-        function AdminUserManagement({ currentUser, users, onResetPassword, onChangeRole }) {
+        function AdminUserManagement({ currentUser, users, onResetPassword, onChangeRole, onAddUser, showAlert }) {
             const [selectedUser, setSelectedUser] = useState(null);
             const [newPassword, setNewPassword] = useState('');
             const [modalOpen, setModalOpen] = useState(false);
+
+            // State for adding new user
+            const [newName, setNewName] = useState('');
+            const [newEmail, setNewEmail] = useState('');
+            const [newUserPassword, setNewUserPassword] = useState('');
+            const [newRole, setNewRole] = useState('PPPAK');
+            const [newParlimen, setNewParlimen] = useState(PARLIMEN_LIST[0]);
+
+            const handleAddNewUser = async (e) => {
+                e.preventDefault();
+                if(!newName || !newEmail || !newUserPassword) return;
+                
+                const newUser = { name: newName, email: newEmail, password: newUserPassword, role: newRole };
+                if (newRole === 'PPPAK' || newRole === 'GURU') newUser.parlimen = newParlimen;
+
+                const res = await onAddUser(newUser);
+                if(res.success) {
+                    showAlert("Berjaya", `Pengguna baru (${newName}) berjaya didaftarkan.`);
+                    setNewName(''); setNewEmail(''); setNewUserPassword('');
+                } else {
+                    showAlert("Ralat", res.message);
+                }
+            };
 
             const openResetModal = (user) => {
                 setSelectedUser(user);
@@ -283,50 +306,25 @@
             return (
                 <div className="space-y-6 animate-fade-in">
                     <h2 className="text-2xl font-black text-slate-800">Pengurusan Akses (Admin)</h2>
-                    <div className="card-pastel rounded-3xl p-6 overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead>
-                                <tr className="border-b-2 border-slate-100 text-slate-500">
-                                    <th className="p-4 font-bold">Pengguna</th>
-                                    <th className="p-4 font-bold">Peranan</th>
-                                    <th className="p-4 font-bold">Kawasan</th>
-                                    <th className="p-4 font-bold text-center">Tindakan &amp; Peranan</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {users.filter(u => u.id !== currentUser.id).map(user => (
-                                    <tr key={user.id} className="border-b border-slate-50 hover:bg-white/50 transition-colors">
-                                        <td className="p-4">
-                                            <div className="font-bold text-slate-700">{user.name}</div>
-                                            <div className="text-xs text-slate-500">{user.email}</div>
-                                        </td>
-                                        <td className="p-4">
-                                            <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700">
-                                                {user.role}
-                                            </span>
-                                        </td>
-                                        <td className="p-4 text-slate-600 font-medium">{user.parlimen || '-'}</td>
-                                        <td className="p-4 text-center space-y-2">
-                                            <select 
-                                                value={user.role} 
-                                                onChange={(e) => onChangeRole(user.id, e.target.value)}
-                                                className="w-full mb-2 bg-white/50 border border-slate-200 px-3 py-2 rounded-xl outline-none focus:ring-2 focus:ring-purple-200 text-xs font-bold text-slate-700"
-                                            >
-                                                <option value="GURU">Peranan: GURU</option>
-                                                <option value="PPPAK">Peranan: PPPAK</option>
-                                                <option value="PKD">Peranan: PKD</option>
-                                                <option value="ADMIN">Peranan: ADMIN</option>
-                                            </select>
-                                            <button onClick={() => openResetModal(user)} className="w-full px-4 py-2 btn-pastel-pink text-xs font-bold rounded-xl shadow-sm">
-                                                Reset Kata Laluan
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {modalOpen && (
-                        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-           
+                    
+                    {/* Borang Tambah Pengguna Oleh Admin */}
+                    <div className="card-pastel p-6 rounded-3xl">
+                        <h3 className="font-bold text-slate-800 mb-4">Tambah Pengguna Baru (Kakitangan)</h3>
+                        <form onSubmit={handleAddNewUser} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
+                            <div className="lg:col-span-2">
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Nama Penuh</label>
+                                <input type="text" required className="w-full bg-white/50 border border-slate-200 px-3 py-2.5 rounded-xl outline-none focus:ring-2 focus:ring-blue-100 text-sm" value={newName} onChange={e=>setNewName(e.target.value)} />
+                            </div>
+                            <div className="lg:col-span-1">
+                                <label className="block text-xs font-bold text-slate-500 mb-1">E-mel</label>
+                                <input type="email" required className="w-full bg-white/50 border border-slate-200 px-3 py-2.5 rounded-xl outline-none focus:ring-2 focus:ring-blue-100 text-sm" value={newEmail} onChange={e=>setNewEmail(e.target.value)} />
+                            </div>
+                            <div className="lg:col-span-1">
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Kata Laluan</label>
+                                <input type="text" required className="w-full bg-white/50 border border-slate-200 px-3 py-2.5 rounded-xl outline-none focus:ring-2 focus:ring-blue-100 text-sm" value={newUserPassword} onChange={e=>setNewUserPassword(e.target.value)} />
+                            </div>
+                            <div className="lg:col-span-1">
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Peranan</label>
+                                <select className="w-full bg-white/50 border border-slate-200 px-3 py-2.5 rounded-xl outline-none focus:ring-2 focus:ring-blue-100 text-sm font-bold" value={newRole} onChange={e=>setNewRole(e.target.value)}>
+                                    <option value="PPPAK">PPPAK</option>
+            
